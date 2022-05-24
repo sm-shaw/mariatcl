@@ -1,0 +1,54 @@
+# Makefile.vc
+
+MARIATCL_VERSION = 0.1
+DLL_VERSION = 01
+
+PROJECT = mariatcl$(DLL_VERSION)
+!include "rules.vc"
+
+ROOT    = .
+TMPDIR  = .
+TCL_INCLUDE = "$(TCLDIR)\include"
+MACHINE  = x64
+
+# comment the following line to compile with symbols
+NODEBUG=1
+
+CP      = copy
+RM      = del
+
+PACKAGE_NAME	= mariatcl
+PACKAGE_VERSION	= 0.1
+DLL = libmariatcl.dll
+
+lflags = /NOLOGO /MACHINE:$(MACHINE) /LIBPATH:"$(TCL_LIBRARY)"
+
+DLLENTRY = @12
+dlllflags = $(lflags) -entry:_DllMainCRTStartup -dll
+
+
+CLFLAGS = /c -Ob2 -favor:blend /MT /W3 /nologo -DUSE_TCL_STUBS -DPACKAGE_NAME=\"mariatcl\" -DPACKAGE_VERSION=\"0.1\"
+
+baselibs   =  "$(TCL_LIBRARY)/tclstub86.lib" "$(LIBDIR)/libmariadb.lib"
+
+DIR_SRC = ..\generic
+
+SRC_FILES = $(DIR_SRC)\mariatcl.c
+
+all: libmariatcl.dll
+
+libmariatcl.dll: mariatcl.obj 
+	link $(dllflags)  -entry:_DllMainCRTStartup -dll $(baselibs) -out:$@ mariatcl.obj
+
+mariatcl.obj: $(SRC_FILES) 
+	cl $(CLFLAGS) /D_WINDOWS /I"$(TCL_INCLUDE)" /I"$(INCLUDEDIR)" $(SRC_FILES) 
+
+install:  install-libraries pkgindex
+
+install-libraries: 
+	@echo Installing libraries to '$(INSTALLDIR)'
+	@if not exist "$(INSTALLDIR)" mkdir "$(INSTALLDIR)"
+	@$(CPY) $(DLL) "$(INSTALLDIR)" >NUL
+pkgindex:
+        @echo package ifneeded $(PACKAGE_NAME) $(PACKAGE_VERSION) \
+            [list load [file join $$dir $(DLL)]] >> $(INSTALLDIR)\pkgIndex.tcl
