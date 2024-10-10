@@ -36,7 +36,7 @@
 #ifdef _WINDOWS
 #include <windows.h>
 #define PACKAGE "mariatcl"
-#define PACKAGE_VERSION "0.1"
+#define PACKAGE_VERSION "0.1.7.1"
 #endif
 
 #include <tcl.h>
@@ -46,7 +46,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
-
+#define TCL_RESULT_SIZE		200
 #define MARIA_SMALL_SIZE TCL_RESULT_SIZE /* Smaller buffer size. */
 #define MARIA_NAME_LEN 80                /* Max. database name length. */
 /* #define PREPARED_STATEMENT */
@@ -130,11 +130,11 @@ static int Mariatcl_State(ClientData clientData, Tcl_Interp *interp, int objc, T
 static int Mariatcl_InsertId(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const objv[]);
 static int Mariatcl_Query(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const objv[]);
 static int Mariatcl_Receive(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const objv[]);
-static int MariaHandleSet _ANSI_ARGS_((Tcl_Interp * interp, Tcl_Obj *objPtr));
-static void MariaHandleFree _ANSI_ARGS_((Tcl_Obj * objPtr));
-static int MariaNullSet _ANSI_ARGS_((Tcl_Interp * interp, Tcl_Obj *objPtr));
+static int MariaHandleSet(Tcl_Interp * interp, Tcl_Obj *objPtr);
+static void MariaHandleFree(Tcl_Obj * objPtr);
+static int MariaNullSet(Tcl_Interp * interp, Tcl_Obj *objPtr);
 static Tcl_Obj *Mariatcl_NewNullObj(MariatclState *mariatclState);
-static void UpdateStringOfNull _ANSI_ARGS_((Tcl_Obj * objPtr));
+static void UpdateStringOfNull(Tcl_Obj * objPtr);
 
 /* handle object type 
  * This section defince funtions for Handling new Tcl_Obj type */
@@ -318,7 +318,7 @@ clear_msg(Tcl_Interp *interp)
  * mariastatus(command).
  */
 
-static void maria_reassemble(Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
+static void maria_reassemble(Tcl_Interp *interp, int objc, Tcl_Obj *const objv[])
 {
   set_statusArr(interp, MARIA_STATUS_CMD, Tcl_NewListObj(objc, objv));
 }
@@ -353,7 +353,7 @@ static void freeResult(MariaTclHandle *handle)
  *
  */
 
-static int maria_prim_confl(Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], char *msg)
+static int maria_prim_confl(Tcl_Interp *interp, int objc, Tcl_Obj *const objv[], char *msg)
 {
   set_statusArr(interp, MARIA_STATUS_CODE, Tcl_NewIntObj(-1));
 
@@ -375,7 +375,7 @@ static int maria_prim_confl(Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[],
  * If no error occurs it returns TCL_OK
  */
 
-static int maria_server_confl(Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], MYSQL *connection)
+static int maria_server_confl(Tcl_Interp *interp, int objc, Tcl_Obj *const objv[], MYSQL *connection)
 {
   const char *mysql_errorMsg;
   if (mysql_errno(connection))
@@ -401,7 +401,7 @@ static int maria_server_confl(Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[
   }
 }
 
-static MariaTclHandle *get_handle(Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], int check_level)
+static MariaTclHandle *get_handle(Tcl_Interp *interp, int objc, Tcl_Obj *const objv[], int check_level)
 {
   MariaTclHandle *handle;
   if (GetHandleFromObj(interp, objv[1], &handle) != TCL_OK)
@@ -498,7 +498,7 @@ static MariaTclHandle *createMariaHandle(MariatclState *statePtr)
   memset(handle, 0, sizeof(MariaTclHandle));
   if (handle == 0)
   {
-    panic("no memory for handle");
+    Tcl_Panic("no memory for handle");
     return handle;
   }
   handle->type = HT_CONNECTION;
@@ -569,7 +569,7 @@ static void closeHandle(MariaTclHandle *handle)
  * SIDE EFFECT: Sets the Tcl result on failure.
  */
 
-static MariaTclHandle *maria_prologue(Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], int req_min_args, int req_max_args, int check_level, char *usage_msg)
+static MariaTclHandle *maria_prologue(Tcl_Interp *interp, int objc, Tcl_Obj *const objv[], int req_min_args, int req_max_args, int check_level, char *usage_msg)
 {
   /* Check number of args. */
   if (objc < req_min_args || objc > req_max_args)
@@ -598,11 +598,11 @@ static MariaTclHandle *maria_prologue(Tcl_Interp *interp, int objc, Tcl_Obj *CON
  * SIDE EFFECT: Sets the result and status on failure.
  */
 
-static Tcl_Obj *maria_colinfo(Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[], MYSQL_FIELD *fld, Tcl_Obj *keyw)
+static Tcl_Obj *maria_colinfo(Tcl_Interp *interp, int objc, Tcl_Obj *const objv[], MYSQL_FIELD *fld, Tcl_Obj *keyw)
 {
   int idx;
 
-  static CONST char *MariaColkey[] =
+  static const char *MariaColkey[] =
       {
           "table", "name", "type", "length", "prim_key", "non_null", "numeric", "decimals", NULL};
   enum coloptions
@@ -773,7 +773,7 @@ static void Mariatcl_Kill(ClientData clientData)
  *      TCL_ERROR - connect not successful - error message returned
  */
 
-static CONST char *MariaConnectOpt[] =
+static const char *MariaConnectOpt[] =
     {
         "-host", "-user", "-password", "-db", "-port", "-socket", "-encoding",
         "-ssl", "-compress", "-noschema", "-odbc",
@@ -971,7 +971,7 @@ static int Mariatcl_Connect(ClientData clientData, Tcl_Interp *interp, int objc,
 
   if (handle == 0)
   {
-    panic("no memory for handle");
+    Tcl_Panic("no memory for handle");
     return TCL_ERROR;
   }
 
@@ -1123,7 +1123,7 @@ static int Mariatcl_Sel(ClientData clientData, Tcl_Interp *interp, int objc, Tcl
   MariaTclHandle *handle;
   unsigned long *lengths;
 
-  static CONST char *selOptions[] = {"-list", "-flatlist", NULL};
+  static const char *selOptions[] = {"-list", "-flatlist", NULL};
   /* Warning !! no option number */
   int i, selOption = 2, colCount;
 
@@ -1668,7 +1668,7 @@ static int Mariatcl_Info(ClientData clientData, Tcl_Interp *interp, int objc, Tc
   MYSQL_ROW row;
   const char *val;
   Tcl_Obj *resList;
-  static CONST char *MariaDbOpt[] =
+  static const char *MariaDbOpt[] =
   {
     "dbname",
     "dbname?",
@@ -1825,7 +1825,7 @@ static int Mariatcl_BaseInfo(ClientData clientData, Tcl_Interp *interp, int objc
   int idx;
   Tcl_Obj *resList;
   char **option;
-  static CONST char *MariaInfoOpt[] =
+  static const char *MariaInfoOpt[] =
   {
     "connectparameters",
     "clientversion",
@@ -1891,7 +1891,7 @@ static int Mariatcl_Result(ClientData clientData, Tcl_Interp *interp, int objc, 
 {
   int idx;
   MariaTclHandle *handle;
-  static CONST char *MariaResultOpt[] =
+  static const char *MariaResultOpt[] =
       {
           "rows", "rows?", "cols", "cols?", "current", "current?", NULL};
   enum resultoption
@@ -2448,7 +2448,7 @@ static int Mariatcl_NewNull(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  */
 #if (MYSQL_VERSION_ID >= 40107)
-static CONST char *MariaServerOpt[] =
+static const char *MariaServerOpt[] =
     {
         "-multi_statment_on", "-multi_statment_off", "-auto_reconnect_on", "-auto_reconnect_off", NULL};
 #endif
@@ -2874,9 +2874,9 @@ int Mariatcl_Init(interp)
   char nbuf[MARIA_SMALL_SIZE];
   MariatclState *statePtr;
 
-  if (Tcl_InitStubs(interp, "8.1", 0) == NULL)
+  if (Tcl_InitStubs(interp, "8.6-", 0) == NULL)
     return TCL_ERROR;
-  if (Tcl_PkgRequire(interp, "Tcl", "8.1", 0) == NULL)
+  if (Tcl_PkgRequire(interp, "Tcl", "8.6-", 0) == NULL)
     return TCL_ERROR;
   if (Tcl_PkgProvide(interp, "mariatcl", PACKAGE_VERSION) != TCL_OK)
     return TCL_ERROR;
@@ -2981,7 +2981,7 @@ int Mariatcl_Init(interp)
     return TCL_OK;
   else
   {
-    panic("*** mariatcl (mariatcl.c): handle prefix inconsistency!\n");
+    Tcl_Panic("*** mariatcl (mariatcl.c): handle prefix inconsistency!\n");
     return TCL_ERROR;
   }
 }
