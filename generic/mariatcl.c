@@ -446,7 +446,8 @@ static MariaTclHandle *get_handle(Tcl_Interp *interp, int objc, Tcl_Obj *const o
 static int maria_QueryTclObj(MariaTclHandle *handle, Tcl_Obj *obj)
 {
   char *query;
-  int result, queryLen;
+  int result;
+  Tcl_Size queryLen;
 
   Tcl_DString queryDS;
 
@@ -1035,7 +1036,7 @@ static int Mariatcl_Connect(ClientData clientData, Tcl_Interp *interp, int objc,
 
 static int Mariatcl_Use(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const objv[])
 {
-  int len;
+  Tcl_Size len;
   char *db;
   MariaTclHandle *handle;
 
@@ -1071,7 +1072,7 @@ static int Mariatcl_Use(ClientData clientData, Tcl_Interp *interp, int objc, Tcl
 
 static int Mariatcl_Escape(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const objv[])
 {
-  int len;
+  Tcl_Size len;
   char *inString, *outString;
   MariaTclHandle *handle;
 
@@ -1433,7 +1434,7 @@ static int Mariatcl_Map(ClientData clientData, Tcl_Interp *interp, int objc, Tcl
 
   MariaTclHandle *handle;
   int idx;
-  int listObjc;
+  Tcl_Size listObjc;
   Tcl_Obj *tempObj, *varNameObj;
   MYSQL_ROW row;
   int *val;
@@ -1541,7 +1542,7 @@ static int Mariatcl_Receive(ClientData clientData, Tcl_Interp *interp, int objc,
 
   MariaTclHandle *handle;
   int idx;
-  int listObjc;
+  Tcl_Size listObjc;
   Tcl_Obj *tempObj, *varNameObj;
   MYSQL_ROW row;
   int *val = NULL;
@@ -1979,7 +1980,7 @@ static int Mariatcl_Col(ClientData clientData, Tcl_Interp *interp, int objc, Tcl
   int current_db;
   MariaTclHandle *handle;
   int idx;
-  int listObjc;
+  Tcl_Size listObjc;
   Tcl_Obj **listObjv, *colinfo, *resList, *resSubList;
   MYSQL_FIELD *fld;
   MYSQL_RES *result;
@@ -2178,7 +2179,7 @@ static int Mariatcl_Ping(ClientData clientData, Tcl_Interp *interp, int objc, Tc
 static int Mariatcl_ChangeUser(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const objv[])
 {
   MariaTclHandle *handle;
-  int len;
+  Tcl_Size len;
   char *user, *password, *database = NULL;
 
   if ((handle = maria_prologue(interp, objc, objv, 4, 5, CL_CONN,
